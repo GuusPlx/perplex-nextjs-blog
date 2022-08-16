@@ -78,7 +78,12 @@ export default function Index({ posts, preview, characters, umsCssJsData }) {
   )
 }
 
-export async function getServerSideProps(context) {
+export async function getServerSideProps({ req, res}) {
+  res.setHeader(
+    'Cache-Control',
+    'public, s-maxage=10, stale-while-revalidate=59'
+  )
+  
   // Fetch data from external API
   const rmResponse = await fetch(`https://rickandmortyapi.com/api/character`)
   const characterData = await rmResponse.json()
