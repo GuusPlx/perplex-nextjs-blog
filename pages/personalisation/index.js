@@ -6,8 +6,9 @@ import Layout from '../../components/layout'
 import { getAllPostsForHome } from '../../lib/umbraco-heartcore'
 import Head from 'next/head'
 import { CMS_NAME, CMS_URL } from '../../lib/constants'
+import Script from 'next/script'
 
-export default function Index({ posts, preview }) {
+export default function Index({ posts, preview, characters, umsCssJsData }) {
   const heroPost = posts[0]
   const morePosts = posts.slice(1)
   return (
@@ -39,6 +40,20 @@ export default function Index({ posts, preview }) {
               .
             </h4>
           </section>
+          <section className="my-10">
+            <h2 className="mb-6 text-3xl font-bold text-purple-500">Onderstaande character content wordt serverside opgehaald op client request</h2>
+            <h3 className="my-4 text-xl font-bold">Scripts en styles die worden ingeladen:</h3>
+            <h4 className="my-2 font-bold">Styles:</h4>
+            <pre>{umsCssJsData.css}</pre>
+            <h4 className="my-2 font-bold">Scripts:</h4>
+            <pre>{umsCssJsData.js}</pre>
+            <h3 className="my-4 text-xl font-bold">Rick en morty characters worden opgehaald van externe content api:</h3>
+            <ul className="grid gap-3 lg:grid-cols-3">
+              {characters.map((character) => (
+                <li>{character.name}</li>
+              ))}
+            </ul>
+          </section>
           {heroPost && (
             <HeroPost
               title={heroPost.title}
@@ -51,15 +66,29 @@ export default function Index({ posts, preview }) {
           )}
           {morePosts.length > 0 && <MoreStories posts={morePosts} />}
         </Container>
+        <Script
+          strategy="afterInteractive"
+          dangerouslySetInnerHTML={{
+            __html: umsCssJsData.js,
+          }}
+        />
+        <style>{umsCssJsData.css}</style>
       </Layout>
     </>
   )
 }
 
-export async function getStaticProps({ preview = false }) {
-  const posts = (await getAllPostsForHome(preview)) || []
-  return {
-    props: { posts, preview },
-    revalidate: 10, // In seconds
-  }
+export async function getServerSideProps(context) {
+  // Fetch data from external API
+  const rmResponse = await fetch(`https://rickandmortyapi.com/api/character`)
+  const characterData = await rmResponse.json()
+  const characters = characterData?.results
+
+  const umsResponse = await fetch(`${process.env.UMS_ENDPOINT}/personalised-js-and-css`)
+  const umsCssJsData = await umsResponse.json()
+  
+  const posts = (await getAllPostsForHome()) || []
+
+  // Pass data to the page via props
+  return { props: { posts, characters, umsCssJsData } }
 }
