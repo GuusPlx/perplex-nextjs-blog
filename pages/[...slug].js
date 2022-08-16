@@ -7,12 +7,12 @@ import Header from 'components/header'
 import PostHeader from 'components/post-header'
 import SectionSeparator from 'components/section-separator'
 import Layout from 'components/layout'
-import { getAllPostsWithSlug, getPostAndMorePosts } from 'lib/umbraco-heartcore'
+import { getAllPostsWithSlug, getPostAndMorePosts, getPostAndMorePosts2 } from 'lib/umbraco-heartcore'
 import PostTitle from 'components/post-title'
 import Head from 'next/head'
 import { CMS_NAME } from 'lib/constants'
 
-export default function Post({ post, morePosts, preview }) {
+export default function Post({ post, morePosts, preview, ums }) {
   const router = useRouter()
 
   if (!router.isFallback && !post?.slug) {
@@ -30,7 +30,7 @@ export default function Post({ post, morePosts, preview }) {
             <article>
               <Head>
                 <title>
-                  {post.title} | Next.js Blog Example with {CMS_NAME}
+                  {post.title} | Next.js Blog Example with {CMS_NAME} | {ums}
                 </title>
                 {<meta property="og:image" content={post.ogImage.url} />}
               </Head>
@@ -40,7 +40,9 @@ export default function Post({ post, morePosts, preview }) {
                 date={post.date}
                 author={post.author}
               />
-              <PostBody content={post.content} />
+              { post.content !== undefined &&
+                <PostBody content={post.content} />
+              }
             </article>
             <SectionSeparator />
             {morePosts.length > 0 && <MoreStories posts={morePosts} />}
@@ -52,7 +54,13 @@ export default function Post({ post, morePosts, preview }) {
 }
 
 export async function getStaticProps({ params, preview = false }) {
-  const data = await getPostAndMorePosts(params.slug, preview)
+  let data;
+  console.log(params)
+  if(params.ums === undefined) {
+    data = await getPostAndMorePosts(params.slug, preview)
+  } else {
+    data = await getPostAndMorePosts2(params.slug, preview)
+  }
   return {
     props: {
       preview,
